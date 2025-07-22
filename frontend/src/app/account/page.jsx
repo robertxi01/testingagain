@@ -1,38 +1,52 @@
 // ACCOUNT PROFILE PAGE
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 
 export default function Page() {
-    // dummy profile info
-    const [fullName, setFullName] = useState('Jen Chen');
-    const [email, setEmail] = useState('jdc0226@gmail.com');
-    const [confirmEmail, setConfirmEmail] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [profilePic, setProfilePic] = useState('https://t4.ftcdn.net/jpg/02/15/84/43/360_F_215844325_ttX9YiIIyeaR7Ne6EaLLjMAmy4GvPC69.jpg');
 
     const [uploading, setUploading] = useState(false);
 
-    const [confirmEmailError, setConfirmEmailError] = useState(false);
     const [passwordError, setPasswordError] = useState(false);
 
     const [cardNumber, setCardNumber] = useState('');
     const [address, setAddress] = useState('');
+    const [cards, setCards] = useState([]);
+    const [promotions, setPromotions] = useState(false);
+    const [updateMsg, setUpdateMsg] = useState('');
 
     // dummy displayed info (left card)
     const [displayFullName, setDisplayFullName] = useState(fullName);
 
-    const handleUpdate = (event) => {
+    // load user info on mount
+    useEffect(() => {
+        const uid = localStorage.getItem('userId');
+        if (!uid) return;
+        fetch(`http://localhost:8080/users/${uid}`)
+            .then(res => res.json())
+            .then(data => {
+                setFullName(data.name);
+                setEmail(data.email);
+                setAddress(data.address || '');
+                setPromotions(data.promotions);
+                setDisplayFullName(data.name);
+            })
+            .catch(() => {});
+
+        fetch(`http://localhost:8080/users/${uid}/cards`)
+            .then(res => res.json())
+            .then(setCards)
+            .catch(() => {});
+    }, []);
+
+    const handleUpdate = async (event) => {
         event.preventDefault();
 
         let hasError = false;
-
-        if (confirmEmail !== email) {
-            setConfirmEmailError(true);
-            hasError = true;
-        } else {
-            setConfirmEmailError(false);
-        }
 
         if (password.trim() === '') {
             setPasswordError(true);
@@ -43,11 +57,26 @@ export default function Page() {
 
         if (hasError) return;
 
-        // mimic successful update
+        const uid = localStorage.getItem('userId');
+        if (!uid) return;
+        await fetch(`http://localhost:8080/users/${uid}`,{
+            method:'PUT',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ id: uid, name: fullName, email, phone: '', password, address, promotions })
+        });
+
+        if (cardNumber.trim()) {
+            await fetch(`http://localhost:8080/users/${uid}/cards`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ cardNumber })
+            });
+            setCardNumber('');
+            fetch(`http://localhost:8080/users/${uid}/cards`).then(res=>res.json()).then(setCards);
+        }
         setDisplayFullName(fullName);
-        alert('Profile updated (dummy save)!');
         setPassword('');
-        setConfirmEmail('');
+        setUpdateMsg('Profile updated');
     };
 
     const handleImageChange = (event) => {
@@ -118,24 +147,10 @@ export default function Page() {
                         type="email"
                         placeholder="Email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="text-black"
+                        disabled
+                        className="text-black opacity-50"
                         style={inputStyle}
                     />
-                    <input
-                        type="email"
-                        placeholder="Confirm Email"
-                        value={confirmEmail}
-                        onChange={(e) => setConfirmEmail(e.target.value)}
-                        className="text-black"
-                        style={{
-                            ...inputStyle,
-                            borderColor: confirmEmailError ? 'red' : inputStyle.borderColor,
-                        }}
-                    />
-                    {confirmEmailError && (
-                        <div style={errorTextStyle}>Emails must match</div>
-                    )}
                     <input
                         type="password"
                         placeholder="Password"
@@ -161,6 +176,13 @@ export default function Page() {
                             borderColor: passwordError ? 'red' : inputStyle.borderColor,
                         }}
                     />
+                    {cards.length > 0 && (
+                        <ul className="text-sm text-white">
+                            {cards.map(c => (
+                                <li key={c.id}>****{c.lastFour} <button className="ml-2 underline" onClick={async()=>{await fetch(`http://localhost:8080/users/${localStorage.getItem('userId')}/cards/${c.id}`,{method:'DELETE'}); setCards(cards.filter(x=>x.id!==c.id));}}>Remove</button></li>
+                            ))}
+                        </ul>
+                    )}
                     <input
                         type="address"
                         placeholder="Address"
@@ -172,9 +194,14 @@ export default function Page() {
                             borderColor: passwordError ? 'red' : inputStyle.borderColor,
                         }}
                     />
+                    <label className="flex gap-2 items-center mt-2">
+                        <input type="checkbox" checked={promotions} onChange={e => setPromotions(e.target.checked)} />
+                        Promotions
+                    </label>
                     <button onClick={handleUpdate} style={buttonStyle}>
                         Update
                     </button>
+                    {updateMsg && <div className="text-green-300 mt-2">{updateMsg}</div>}
                 </div>
             </div>
         </>

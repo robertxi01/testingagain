@@ -13,42 +13,30 @@ export default function BookPage() {
 
     const [quantity, setQuantity] = useState(1);
 
-    const handleAddToCart = () => {
-        console.log(`Adding ${quantity} copies of ${book.title} to cart.`);
-        // TODO: replace with API call to POST /cart/{userId}/{bookId}
+    const handleAddToCart = async () => {
+        const email = localStorage.getItem('token');
+        if (!email) {
+            alert('Login required');
+            return;
+        }
+        await fetch(`http://localhost:8080/cart/${email}/add?bookId=${id}&quantity=${quantity}`, {
+            method: 'POST'
+        });
         setShowCartModal(true);
-
-        {/* dummy code ui demo */}
-        const item = {
-            id,
-            title: "Red Rising",
-            author: "Pierce Brown",
-            buyingPrice: 18.0,
-            description: "A sci-fi novel about rebellion.",
-            coverImageUrl: "https://m.media-amazon.com/images/I/81wGzzxqHSL.jpg"
-        };
-
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
-
-        cart.push(item);
-
-        localStorage.setItem('cart', JSON.stringify(cart));
     };
 
     useEffect(() => {
         async function fetchBook() {
-            const book = {
-                id,
-                title: "Red Rising",
-                author: "Pierce Brown",
-                buyingPrice: 18.0,
-                description: "A sci-fi novel about rebellion.",
-                coverImageUrl: "https://m.media-amazon.com/images/I/81wGzzxqHSL.jpg"
-            };
-
-
-            setBook(book);
-            setLoading(false);
+            try {
+                const res = await fetch(`http://localhost:8080/books/${id}`);
+                if (!res.ok) throw new Error('Failed to load');
+                const data = await res.json();
+                setBook(data);
+            } catch (err) {
+                console.error('Error fetching book:', err);
+            } finally {
+                setLoading(false);
+            }
         }
 
         if (id) {

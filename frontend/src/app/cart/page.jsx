@@ -7,18 +7,27 @@ import Link from 'next/link';
 
 export default function CartPage() {
     const [cartItems, setCartItems] = useState([]);
-    const [quantity, setQuantity] = useState(1);
     const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 
-    useEffect(() => { {/* initial cart functionality test */}
-        const storedCart = JSON.parse(localStorage.getItem('cart')) || [];
-        setCartItems(storedCart);
-    }, []);
+    const email = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-    const handleRemove = (bookId) => {
-        const updatedCart = cartItems.filter(item => item.id !== bookId);
-        setCartItems(updatedCart);
-        localStorage.setItem('cart', JSON.stringify(updatedCart));
+    const loadCart = () => {
+        if (!email) return;
+        fetch(`http://localhost:8080/cart/${email}`)
+            .then(res => res.json())
+            .then(cart => setCartItems(cart.items || []));
+    };
+
+    useEffect(() => { loadCart(); }, []);
+
+    const updateQuantity = async (bookId, qty) => {
+        await fetch(`http://localhost:8080/cart/${email}/update?bookId=${bookId}&quantity=${qty}`, {method: 'POST'});
+        loadCart();
+    };
+
+    const handleRemove = async (bookId) => {
+        await fetch(`http://localhost:8080/cart/${email}/remove?bookId=${bookId}`, {method: 'POST'});
+        loadCart();
     };
 
     return (
@@ -46,7 +55,7 @@ export default function CartPage() {
                             {cartItems.map((item) => (
                                 <div
                                     className='rounded-lg overflow-hidden shadow hover:shadow-lg transition-shadow cursor-pointer'
-                                    key={item.id}
+                                    key={item.bookId}
                                 >
                                     <div className='bg-[rgb(27,28,30)] h-48 flex items-center justify-center'>
                                         <img
@@ -63,22 +72,22 @@ export default function CartPage() {
                                         </h3>
                                         <p className='text-gray-300 text-sm'>{item.author}</p>
                                         <p className='text-red-300 text-sm mt-2'>
-                                            ${item.buyingPrice?.toFixed(2)}
+                                            ${item.unitPrice?.toFixed(2)}
                                         </p>
                                     </div>
                                     <div style={quantityContainerStyle}>
                                         <button
                                             style={adjustButtonStyle}
-                                            onClick={() => setQuantity(Math.max(quantity - 1, 1))}
+                                            onClick={() => updateQuantity(item.bookId, Math.max(item.quantity - 1, 0))}
                                         >-</button>
-                                        <span style={quantityDisplayStyle}>{quantity}</span>
+                                        <span style={quantityDisplayStyle}>{item.quantity}</span>
                                         <button
                                             style={adjustButtonStyle}
-                                            onClick={() => setQuantity(quantity + 1)}
+                                            onClick={() => updateQuantity(item.bookId, item.quantity + 1)}
                                         >+</button>
                                         <button
                                             style={adjustButtonStyle}
-                                            onClick={() => handleRemove(item.id)}
+                                            onClick={() => handleRemove(item.bookId)}
                                         >Remove</button>
                                     </div>
                                 </div>
@@ -88,7 +97,13 @@ export default function CartPage() {
                         <div className="mt-8 flex justify-end pr-5">
                             <button
                                 className="px-6 py-3 bg-red-900 text-white rounded hover:bg-red-700 transition-colors"
-                                onClick={() => setShowCheckoutModal(true)}
+                                onClick={() => {
+                                    if (!email) {
+                                        alert('Please log in to checkout');
+                                    } else {
+                                        setShowCheckoutModal(true);
+                                    }
+                                }}
                             >
                                 Checkout
                             </button>

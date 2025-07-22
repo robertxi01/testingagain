@@ -2,12 +2,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import LoginModal from './LoginModal';
-import SignupModal from './SignupModal';
 
 export default function Navbar() {
-    const [showLogin, setShowLogin] = useState(false);
-    const [showSignup, setShowSignup] = useState(false);
     const [authenticated, setAuthenticated] = useState(false);
     const [userProfile, setUserProfile] = useState(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -15,6 +11,14 @@ export default function Navbar() {
 
     {/* global thing for cart tracking */}
     const [cartItems, setCartItems] = useState([]);
+
+    // check for stored session token on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            setAuthenticated(!!token);
+        }
+    }, []);
 
     // dropdown logic
     useEffect(() => {
@@ -90,6 +94,10 @@ export default function Navbar() {
                                         
                                         <button
                                             onClick={() => {
+                                                if (typeof window !== 'undefined') {
+                                                    localStorage.removeItem('token');
+                                                    sessionStorage.removeItem('token');
+                                                }
                                                 setAuthenticated(false);
                                                 setUserProfile(null);
                                                 setDropdownOpen(false);
@@ -105,30 +113,22 @@ export default function Navbar() {
 
                     ) : (
                         <>
-                            <button
-                                onClick={() => setShowLogin(true)}
+                            <Link
+                                href="/login"
                                 className="px-4 py-2 bg-zinc-700 text-white rounded-md hover:bg-zinc-900 hover:text-white focus:outline-none"
                             >
                                 Login
-                            </button>
-                            <button
-                                onClick={() => setShowSignup(true)}
+                            </Link>
+                            <Link
+                                href="/register"
                                 className="px-4 py-2 bg-red-900 text-white rounded-md hover:bg-[oklch(60%_0.177_26.899)]"
                             >
                                 Sign Up
-                            </button>
+                            </Link>
                         </>
                     )}
                 </div>
             </header>
-
-            <LoginModal
-                show={showLogin}
-                onClose={() => setShowLogin(false)}
-                setAuthenticated={setAuthenticated}
-                setUserProfile={setUserProfile}
-            />
-            <SignupModal show={showSignup} onClose={() => setShowSignup(false)} />
         </>
     );
 }
