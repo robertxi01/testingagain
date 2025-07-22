@@ -1,6 +1,8 @@
 package com.bookstore.team17bookstore.repository;
 
 import com.bookstore.team17bookstore.model.User;
+import com.bookstore.team17bookstore.model.UserStatus;
+import com.bookstore.team17bookstore.model.UserRole;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -13,13 +15,16 @@ public class UserRepository {
     private final DataSource dataSource;
 
     private static final String INSERT =
-        "INSERT INTO users (name, email, phone, password) VALUES (?, ?, ?, ?)";
+        "INSERT INTO users (name, email, phone, password, address, status, promotions, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static final String SELECT_BY_EMAIL =
         "SELECT * FROM users WHERE email = ?";
 
     private static final String SELECT_BY_ID =
         "SELECT * FROM users WHERE id = ?";
+
+    private static final String UPDATE =
+        "UPDATE users SET name=?, phone=?, password=?, address=?, status=?, promotions=?, role=? WHERE id=?";
 
     public UserRepository(DataSource dataSource) {
         this.dataSource = dataSource;
@@ -38,6 +43,10 @@ public class UserRepository {
             ps.setString(2, user.getEmail());
             ps.setString(3, user.getPhone());
             ps.setString(4, user.getPassword());
+            ps.setString(5, user.getAddress());
+            ps.setString(6, user.getStatus().name());
+            ps.setBoolean(7, user.isPromotions());
+            ps.setString(8, user.getRole().name());
             ps.executeUpdate();
 
            try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -84,6 +93,27 @@ public class UserRepository {
     }
 
     /**
+     * Update an existing user.
+     * @param user the user with updated fields
+     * @return the same user
+     */
+    public User update(User user) throws SQLException {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(UPDATE)) {
+            ps.setString(1, user.getName());
+            ps.setString(2, user.getPhone());
+            ps.setString(3, user.getPassword());
+            ps.setString(4, user.getAddress());
+            ps.setString(5, user.getStatus().name());
+            ps.setBoolean(6, user.isPromotions());
+            ps.setString(7, user.getRole().name());
+            ps.setLong(8, user.getId());
+            ps.executeUpdate();
+        }
+        return user;
+    }
+
+    /**
      * Map a ResultSet row to a User object.
      * @param rs the ResultSet containing user data
      * @return a User object populated with data from the ResultSet
@@ -96,6 +126,10 @@ public class UserRepository {
         u.setEmail(rs.getString("email"));
         u.setPhone(rs.getString("phone"));
         u.setPassword(rs.getString("password"));
+        u.setAddress(rs.getString("address"));
+        u.setStatus(UserStatus.valueOf(rs.getString("status")));
+        u.setPromotions(rs.getBoolean("promotions"));
+        u.setRole(UserRole.valueOf(rs.getString("role")));
         return u;
     }
 }

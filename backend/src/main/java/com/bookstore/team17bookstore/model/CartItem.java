@@ -5,6 +5,8 @@ public class CartItem {
     private Long bookId;
     private int quantity;
     private double unitPrice;
+    private String title;
+    private String author;
 
     // Default constructor
     public CartItem() { }
@@ -33,4 +35,10 @@ public class CartItem {
 
     public double getUnitPrice() { return unitPrice; }
     public void setUnitPrice(double unitPrice) { this.unitPrice = unitPrice; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getAuthor() { return author; }
+    public void setAuthor(String author) { this.author = author; }
 }

@@ -24,6 +24,18 @@ public class BookController {
      */
     @GetMapping
     public List<Book> all() throws SQLException { return svc.list(); }
+
+    /**
+     * Retrieve a single book by its ID.
+     * @param id the book ID
+     * @return the found Book
+     * @throws SQLException on error
+     */
+    @GetMapping("/{id}")
+    public Book one(@PathVariable Long id) throws SQLException {
+        return svc.findById(id)
+            .orElseThrow(() -> new RuntimeException("Book not found"));
+    }
     
     /**
      * Adds a new book to the store.
@@ -34,6 +46,19 @@ public class BookController {
      */
     @PostMapping
     public Book add(@RequestBody Book b) throws SQLException { return svc.add(b); }
+
+    /**
+     * Update an existing book.
+     * @param id the book ID
+     * @param b  the updated Book body
+     * @return the saved Book
+     * @throws SQLException on error
+     */
+    @PutMapping("/{id}")
+    public Book update(@PathVariable Long id, @RequestBody Book b) throws SQLException {
+        b.setId(id);
+        return svc.add(b);
+    }
 
     /**
      * Finds a book by its ISBN.
