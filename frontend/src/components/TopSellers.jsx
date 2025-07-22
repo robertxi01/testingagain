@@ -10,7 +10,7 @@ export default function TopSellers() {
         fetch("http://localhost:8080/books")
             .then((res) => res.json())
             .then((data) => {
-                const topSellers = data.filter((book) => [6, 7, 8].includes(book.id));
+                const topSellers = data.filter((book) => [11, 12, 13].includes(book.id));
                 console.log("Filtered top sellers:", topSellers);
                 console.log("ALL books from backend:", data);
                 setTopSellers(topSellers);
